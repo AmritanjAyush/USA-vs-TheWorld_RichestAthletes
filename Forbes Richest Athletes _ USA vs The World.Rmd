@@ -1,0 +1,151 @@
+---
+title: "ForbesRichestAthletes_USA vs the World"
+author: "Amritanj Ayush"
+date: "2/12/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r Loading Libraries}
+
+#Loading Libraries
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readr)
+
+
+forbes_list <- read_csv("Forbes Richest Athletes 1990-2020.csv")
+
+```
+
+```{r setup, include=TRUE}
+##Data Cleaning
+
+forbes_list <- dplyr::rename(forbes_list, "Earnings.Million" = 
+                               "earnings ($ million)")
+
+#converting all sports to Upper case as 'Basketball' 
+#& 'basketball' are read as different sports by R
+
+forbes_list$Sport = toupper(forbes_list$Sport)
+
+#Replacing Sport Names 
+
+forbes_list$Sport[forbes_list$Sport == "NBA"] <- "BASKETBALL"
+forbes_list$Sport[forbes_list$Sport == "AUTO RACING"] <- "FORMULA 1"
+forbes_list$Sport[forbes_list$Sport == "AUTO RACING (NASCAR)"] <- "NASCAR"
+forbes_list$Sport[forbes_list$Sport == "F1 MOTORSPORTS" ] <- "FORMULA 1"
+forbes_list$Sport[forbes_list$Sport == "F1 RACING" ] <- "FORMULA 1"
+forbes_list$Sport[forbes_list$Sport == "AMERICAN FOOTBALL" ] <- "FOOTBALL"
+forbes_list$Sport[forbes_list$Sport == "NFL" ] <- "FOOTBALL"
+forbes_list$Sport[forbes_list$Sport=="AMERICAN FOOTBALL / BASEBALL"] <- "FOOTBALL"
+
+```
+
+```{r}
+forbes_list[1:10,]
+
+```
+
+Here is a complete list of the world's highest-paid athletes since the first list published by Forbes in 1990.The dataset gives the following info about the athletes featured on the list - 
+1) Name - Name of the athlete
+2) Nationality 
+3) Current Rank - Rank on the Forbes' Richest Athletes List in that year
+4) Previous Rank - Rank on the Forbes' Richest Athletes List in the previous year
+5) Sport
+6) Year - Year in which the list was released
+7) Earnings.Million - Earnings of the athlete in that year, in Million USD
+
+The main cleaning/tidying of the dataset was done in the 'Sport' column. 'Basketball' & 'basketball' were interpreted as two different sports. So I converted all sport names to uppercase. Also there were different names given to the same sport - for eg. NBA and Basketball were two different sports but all Basketball players on the list were NBA Athletes. Same was the case for NFL - Football & Auto Racing - Formula 1. These names were replaced with their appropriate sports to tidy the dataset.
+
+```{r}
+
+#Graph 1
+
+nat_ <- count(forbes_list, Nationality, sort = TRUE)
+nat_ <- nat_[1:10,]
+nat_sport <- count(forbes_list, Nationality, Sport, sort = TRUE)
+
+ggplot(nat_, mapping=aes(x = reorder(Nationality, n), y = n)) + 
+  geom_bar(stat = "identity", fill = "chartreuse4", position = "dodge") + 
+  coord_flip() +
+  geom_text(aes(label=n), vjust=0.5, hjust=-0.07) + 
+  labs(title="Athletes from USA have dominated Forbes' Top 10 list 
+       over past 3 decades", 
+       subtitle = "US Athletes have been featured 206 times in the 
+       Forbes' Richest Athletes List!",
+       x="Nationality of Athlete", y = "Number of appearances on 
+       Forbes' Top 10 List (1990-2020)") +
+  theme(axis.text.x = element_text(angle = 0 , vjust = 0.5, hjust=1, 
+                                   colour = "black"),
+        plot.background = element_rect(fill = "gray100"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())
+
+```
+The United States has dominated Forbes' Top 10 Richest Athletes list over the past 30 years, appearing 206 times out of 300 times, making other nations feel a little less represented in the prestigious list.
+
+```{r}
+US <- filter(forbes_list, Nationality == "USA")
+US_Sport <- count(US, Sport, sort = TRUE)
+
+ggplot(US_Sport, mapping=aes(x = reorder(Sport,n), y = n)) + 
+ geom_bar(stat = "identity", fill = "cornflowerblue", position = "dodge") + 
+  coord_flip() +
+  geom_text(aes(label=n), vjust=0.5, hjust=-0.07) + 
+  labs(title="USA Basketball Players have been featured most 
+       on the Forbes' List",
+       subtitle = "Golfers, Boxers and Football Players don't fall short 
+       by too much though!",
+       x="Sport (USA)", y = "Number of times featured on Forbes 
+       Top 10 List (1990-2020)") +
+  theme(axis.text.x = element_text(angle = 0 , vjust = 0.5, hjust=1, 
+                                     colour = "black"),
+          axis.text.y = element_text(angle = 0 , vjust = 0.5, hjust=1, size = 8, 
+                                     colour = "black"),
+        plot.background = element_rect(fill = "gray100"),
+   panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank())
+  
+```
+
+US Basketball players have been featured 82 times out of the 206. US Golfers, boxers, and football players, on the other hand, are not far behind.
+
+
+```{r}
+#Graph 3
+
+ggplot(US, aes(x = Sport, y = Earnings.Million, group = Sport, fill = Sport)) + 
+  geom_boxplot() + 
+  ylim(0,120) + 
+  labs(title="Golfers & Football Players outearn Basketball Players", 
+       subtitle ="Top US Golfers and Football players have 
+       higher median earnings than Top US Basketball players",
+       x="Sport (USA)", y = "Earnings in Million (USD) ") +
+  theme(axis.text.x = element_text(angle = 90 , vjust = 0.5, hjust=1, size = 8, 
+                                     colour = "black"))
+
+```
+
+Contrary to expectations, in the United States, golfers and football players make more money than basketball players. Golf has a greater IQR than Football and Basketball, indicating that the data points for Golf are more spread out, but its median earnings are the highest of the bunch, followed by Football players.
+
+```{r}
+
+#Graph 4
+
+forbes_list$Country <- if_else(forbes_list$Nationality == "USA", 
+                               "USA", "Rest of World")
+
+ggplot(forbes_list, aes(x=Earnings.Million, color = Country, fill = Country)) + 
+  geom_density(alpha=0.5, binwidth = 10, size = 1.1) +
+  xlim(0,150) + 
+  labs(title="Majority of Top US Athletes earn lesser than Rest of World",
+       x="Earnings in Million (USD)", y = "Density")
+  
+
+```
+Despite topping Forbes' list of most appearances, the "majority" of elite US athletes earn less than their international peers.The US athletes' density plot peaks at USD 25 million, whereas the rest of the world peaks at USD 35 million. The highest 'density' of US athletes earn less than the rest of the world. 
+
